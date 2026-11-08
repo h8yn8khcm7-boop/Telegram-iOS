@@ -15,13 +15,12 @@ jobs:
           restore-keys: bazel-
       - name: Config
         run: |
-          cp build-system/template_minimal_development_configuration.json cfg.json
+          cp build-system/appstore-configuration.json cfg.json
           python3 - <<'EOF'
           import json,os
           c=json.load(open('cfg.json'))
           c['api_id']=os.environ['API_ID']
           c['api_hash']=os.environ['API_HASH']
-          c['bundle_id']='org.mybuild.Swiftgram'
           json.dump(c,open('cfg.json','w'))
           EOF
         env:
