@@ -1,0 +1,40 @@
+name: build
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/cache@v4
+        with:
+          path: ~/telegram-bazel-cache
+          key: bazel-${{ github.sha }}
+          restore-keys: bazel-
+      - name: Config
+        run: |
+          cp build-system/template_minimal_development_configuration.json cfg.json
+          python3 - <<'EOF'
+          import json,os
+          c=json.load(open('cfg.json'))
+          c['api_id']=os.environ['API_ID']
+          c['api_hash']=os.environ['API_HASH']
+          c['bundle_id']='org.mybuild.Swiftgram'
+          json.dump(c,open('cfg.json','w'))
+          EOF
+        env:
+          API_ID: ${{ secrets.API_ID }}
+          API_HASH: ${{ secrets.API_HASH }}
+      - name: Build
+        run: |
+          python3 build-system/Make/Make.py --overrideXcodeVersion \
+            --cacheDir="$HOME/telegram-bazel-cache" build \
+            --configurationPath=cfg.json \
+            --codesigningInformationPath=build-system/fake-codesigning \
+            --buildNumber=1 --configuration=release_arm64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ipa
+          path: bazel-bin/Telegram/*.ipa
