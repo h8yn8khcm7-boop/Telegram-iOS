@@ -29,6 +29,7 @@ jobs:
           API_ID: ${{ secrets.API_ID }}
           API_HASH: ${{ secrets.API_HASH }}
       - name: Build
+        shell: bash
         run: |
           python3 build-system/Make/ImportCertificates.py --path build-system/fake-codesigning/certs
           python3 -u build-system/Make/Make.py --overrideXcodeVersion \
@@ -36,7 +37,10 @@ jobs:
             --configurationPath=cfg.json \
             --codesigningInformationPath=build-system/fake-codesigning \
             --configuration=release_arm64 \
-            --buildNumber=1
+            --buildNumber=1 2>&1 | tee build.log
+      - name: Show errors
+        if: failure()
+        run: grep -n -E "ERROR|error:|Error" build.log | head -30 || true
       - name: Collect
         run: |
           mkdir -p out
